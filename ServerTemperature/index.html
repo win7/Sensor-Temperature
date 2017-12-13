@@ -1,0 +1,101 @@
+<html class="no-js" lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>
+		Temperature IoT
+	</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery.js"></script>
+    <script src="http://code.highcharts.com/stock/highstock.js"></script>
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap-theme.min.css">
+    <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.2/js/bootstrap.min.js"></script>
+    <script src="http://code.highcharts.com/modules/exporting.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="row marketing">
+            <div class="col-lg-12">
+                <div class="panel panel-primary">
+                    <div class="panel-heading text-center"><h4> Monitoreo de Temperatura </h4></div>
+                </div>
+            </div>
+            <div class="col-lg-12">
+             
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label> Temperatura Máxima (C°) </label>
+                            <input type="number" class="form-control" id="temp_max" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label> Temperatura Mínima (C°) </label>
+                            <input type="number" class="form-control" id="temp_min" required>
+                        </div>
+                    </div>
+                    <br>
+                    <button class="btn btn-primary" onclick="UpdateRange()">Actualizar</button>
+               
+                <div class="col-md-12">
+                    <div class="container" id="chart" style="width:100%; height:400px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var socket = io.connect('http://' + location.host);
+        // console.log(location.host)
+        var chart = new Highcharts.StockChart({
+            chart: {
+                renderTo: 'chart', 
+                defaultSeriesType: 'spline',
+                events: {
+                    load: function() {
+                        socket.on('temperature update', function (time, data) {
+                            var series = chart.series[0];
+                            series.addPoint([time, data]);
+                        });
+                    }
+                }
+            },
+            rangeSelector : {
+                selected : 100
+            },
+            title: {
+                text: 'Gráfico Temperatura'
+            },
+            xAxis: {
+                type: 'datetime',
+                tickPixelInterval: 150,
+                maxZoom: 20 * 1000
+            },
+            yAxis: {
+                minPadding: 0.2,
+                maxPadding: 0.2,
+                title: {
+                    text: 'Temperatura ºC',
+                    margin: 10
+                }
+            },
+            series: [{
+                name: 'Temperatura',
+                data: []
+            }],
+            credits: {
+                enabled: false
+            }
+        });
+        socket.on('temperature range', function (max, min) {
+            document.getElementById("temp_max").value = max;
+            document.getElementById("temp_min").value = min;
+        });
+
+        function UpdateRange() {
+            var max = document.getElementById("temp_max").value;
+            var min = document.getElementById("temp_min").value;
+            socket.emit('update range', max, min);
+        }
+    </script>   
+</body>
+</html>
